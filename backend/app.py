@@ -2655,4 +2655,6 @@ if __name__ == '__main__':
     print("   - All new database columns supported")
     print("   - Exact pattern matching with quotes module")
     app.run(debug=True, host='0.0.0.0', port=5000)
-
+if __name__ == '__main__':
+    from gunicorn.app.wsgiapp import run
+    run()
