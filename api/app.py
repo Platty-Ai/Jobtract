@@ -5,7 +5,7 @@ import bcrypt
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Blueprint
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import base64
@@ -19,6 +19,9 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+# Add API Blueprint for /api prefix
+api = Blueprint('api', __name__)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -149,7 +152,7 @@ def require_auth(f):
     return decorated_function
 
 # Authentication routes
-@app.route('/auth/register', methods=['POST'])
+@api.route('/auth/register', methods=['POST'])
 def register():
     data = request.get_json()
     
@@ -184,7 +187,7 @@ def register():
         }
     })
 
-@app.route('/auth/login', methods=['POST'])
+@api.route('/auth/login', methods=['POST'])
 def login():
     data = request.get_json()
     
@@ -223,7 +226,7 @@ def login():
         }
     })
 
-@app.route('/auth/verify-token', methods=['POST'])
+@api.route('/auth/verify-token', methods=['POST'])
 def verify_token_route():
     print("DEBUG: verify-token endpoint called")
     
@@ -277,7 +280,7 @@ def verify_token_route():
     return jsonify({'valid': False})
 
 # Contractor routes (MIGRATED TO POSTGRESQL)
-@app.route('/contractors', methods=['GET'])
+@api.route('/contractors', methods=['GET'])
 @require_auth
 def get_contractors():
     try:
@@ -296,7 +299,7 @@ def get_contractors():
         print(f"ERROR getting contractors: {e}")
         return jsonify({'error': 'Failed to get contractors'}), 500
 
-@app.route('/contractors', methods=['POST'])
+@api.route('/contractors', methods=['POST'])
 @require_auth
 def create_contractor():
     data = request.get_json()
@@ -337,7 +340,7 @@ def create_contractor():
         return jsonify({'error': 'Failed to create contractor'}), 500
 
 # Project routes (COMPLETE WITH PROPER CRUD AND IMAGE HANDLING)
-@app.route('/projects', methods=['GET'])
+@api.route('/projects', methods=['GET'])
 @require_auth
 def get_projects():
     try:
@@ -356,7 +359,7 @@ def get_projects():
         print(f"ERROR getting projects: {e}")
         return jsonify({'error': 'Failed to get projects'}), 500
 
-@app.route('/projects', methods=['POST'])
+@api.route('/projects', methods=['POST'])
 @require_auth
 def create_project():
     data = request.get_json()
@@ -412,7 +415,7 @@ def create_project():
         print(f"ERROR creating project: {e}")
         return jsonify({'error': 'Failed to create project'}), 500
 
-@app.route('/projects/<project_id>', methods=['PUT'])
+@api.route('/projects/<project_id>', methods=['PUT'])
 @require_auth
 def update_project(project_id):
     data = request.get_json()
@@ -467,7 +470,7 @@ def update_project(project_id):
         print(f"ERROR updating project: {e}")
         return jsonify({'error': 'Failed to update project'}), 500
 
-@app.route('/projects/<project_id>', methods=['DELETE'])
+@api.route('/projects/<project_id>', methods=['DELETE'])
 @require_auth
 def delete_project(project_id):
     try:
@@ -490,7 +493,7 @@ def delete_project(project_id):
         return jsonify({'error': 'Failed to delete project'}), 500
 
 # File upload route for project photos
-@app.route('/projects/upload-photo', methods=['POST'])
+@api.route('/projects/upload-photo', methods=['POST'])
 @require_auth
 def upload_project_photo():
     """Upload photo for project - SECURE FILE HANDLING"""
@@ -536,7 +539,7 @@ def upload_project_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 
 # Quote routes (COMPLETE WITH PROPER DATE FORMATTING)
-@app.route('/quotes', methods=['GET'])
+@api.route('/quotes', methods=['GET'])
 @require_auth
 def get_quotes():
     try:
@@ -585,7 +588,7 @@ def get_quotes():
         print(f"ERROR getting quotes: {e}")
         return jsonify({'error': 'Failed to get quotes'}), 500
 
-@app.route('/quotes', methods=['POST'])
+@api.route('/quotes', methods=['POST'])
 @require_auth
 def create_quote():
     data = request.get_json()
@@ -665,7 +668,7 @@ def create_quote():
         return jsonify({'error': 'Failed to create quote'}), 500
 
 # PUT endpoint for updating quotes
-@app.route('/quotes/<quote_id>', methods=['PUT'])
+@api.route('/quotes/<quote_id>', methods=['PUT'])
 @require_auth
 def update_quote(quote_id):
     data = request.get_json()
@@ -764,7 +767,7 @@ def update_quote(quote_id):
         return jsonify({'error': 'Failed to update quote'}), 500
 
 # File upload route for quote photos (MATCHES OTHER MODULES PATTERN)
-@app.route('/quotes/upload-photo', methods=['POST'])
+@api.route('/quotes/upload-photo', methods=['POST'])
 @require_auth
 def upload_quote_photo():
     try:
@@ -806,7 +809,7 @@ def upload_quote_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 
 # DELETE endpoint for quotes
-@app.route('/quotes/<path:quote_id>', methods=['DELETE'])
+@api.route('/quotes/<path:quote_id>', methods=['DELETE'])
 @require_auth
 def delete_quote(quote_id):
     """Delete a quote - HANDLES URL-ENCODED IDs"""
@@ -849,7 +852,7 @@ def delete_quote(quote_id):
         return jsonify({'error': 'Failed to delete quote'}), 500
 
 # EQUIPMENT ROUTES - MATCHING QUOTES PATTERN EXACTLY
-@app.route('/equipment', methods=['GET'])
+@api.route('/equipment', methods=['GET'])
 @require_auth
 def get_equipment():
     """Get all equipment for the authenticated user - MATCHES QUOTES PATTERN"""
@@ -945,7 +948,7 @@ def get_equipment():
         print(f"ERROR getting equipment: {e}")
         return jsonify({'error': 'Failed to get equipment'}), 500
 
-@app.route('/equipment', methods=['POST'])
+@api.route('/equipment', methods=['POST'])
 @require_auth
 def create_equipment():
     """Create new equipment - MATCHES QUOTES PATTERN"""
@@ -1027,7 +1030,7 @@ def create_equipment():
         return jsonify({'error': 'Failed to create equipment'}), 500
 
 # PUT endpoint for updating equipment (MATCHES QUOTES PATTERN)
-@app.route('/equipment/<equipment_id>', methods=['PUT'])
+@api.route('/equipment/<equipment_id>', methods=['PUT'])
 @require_auth
 def update_equipment(equipment_id):
     """Update existing equipment - MATCHES QUOTES PATTERN"""
@@ -1131,7 +1134,7 @@ def update_equipment(equipment_id):
         return jsonify({'error': 'Failed to update equipment'}), 500
 
 # DELETE endpoint for equipment (MATCHES QUOTES PATTERN)
-@app.route('/equipment/<equipment_id>', methods=['DELETE'])
+@api.route('/equipment/<equipment_id>', methods=['DELETE'])
 @require_auth
 def delete_equipment(equipment_id):
     """Delete equipment - MATCHES QUOTES PATTERN"""
@@ -1163,7 +1166,7 @@ def delete_equipment(equipment_id):
         return jsonify({'error': 'Failed to delete equipment'}), 500
 
 # File upload route for equipment photos (MATCHES QUOTES PATTERN)
-@app.route('/equipment/upload-photo', methods=['POST'])
+@api.route('/equipment/upload-photo', methods=['POST'])
 @require_auth
 def upload_equipment_photo():
     """Upload photo for equipment - SECURE FILE HANDLING"""
@@ -1209,7 +1212,7 @@ def upload_equipment_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 
 # ===== COMPLETE EXPENSES ROUTES - BASED ON QUOTES MODULE PATTERNS =====
-@app.route('/expenses', methods=['GET'])
+@api.route('/expenses', methods=['GET'])
 @require_auth
 def get_expenses():
     """Get all expenses for the authenticated user - MATCHES QUOTES PATTERN"""
@@ -1269,7 +1272,7 @@ def get_expenses():
         print(f"ERROR getting expenses: {e}")
         return jsonify({'error': 'Failed to get expenses'}), 500
 
-@app.route('/expenses', methods=['POST'])
+@api.route('/expenses', methods=['POST'])
 @require_auth
 def create_expense():
     """Create new expense - MATCHES QUOTES PATTERN"""
@@ -1343,7 +1346,7 @@ def create_expense():
         return jsonify({'error': 'Failed to create expense'}), 500
 
 # PUT endpoint for updating expenses (MATCHES QUOTES PATTERN)
-@app.route('/expenses/<expense_id>', methods=['PUT'])
+@api.route('/expenses/<expense_id>', methods=['PUT'])
 @require_auth
 def update_expense(expense_id):
     """Update existing expense - MATCHES QUOTES PATTERN"""
@@ -1435,7 +1438,7 @@ def update_expense(expense_id):
         return jsonify({'error': 'Failed to update expense'}), 500
 
 # DELETE endpoint for expenses (MATCHES QUOTES PATTERN)
-@app.route('/expenses/<expense_id>', methods=['DELETE'])
+@api.route('/expenses/<expense_id>', methods=['DELETE'])
 @require_auth
 def delete_expense(expense_id):
     """Delete expense - MATCHES QUOTES PATTERN"""
@@ -1467,7 +1470,7 @@ def delete_expense(expense_id):
         return jsonify({'error': 'Failed to delete expense'}), 500
 
 # File upload route for expense photos (MATCHES QUOTES PATTERN)
-@app.route('/expenses/upload-photo', methods=['POST'])
+@api.route('/expenses/upload-photo', methods=['POST'])
 @require_auth
 def upload_expense_photo():
     """Upload photo for expense - SECURE FILE HANDLING"""
@@ -1513,7 +1516,7 @@ def upload_expense_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 
 # Tank deposit routes (UPDATED FOR FRONTEND INTEGRATION)
-@app.route('/tank-deposits', methods=['GET'])
+@api.route('/tank-deposits', methods=['GET'])
 @require_auth
 def get_tank_deposits():
     try:
@@ -1532,7 +1535,7 @@ def get_tank_deposits():
         print(f"ERROR getting tank deposits: {e}")
         return jsonify({'error': 'Failed to get tank deposits'}), 500
 
-@app.route('/tank-deposits', methods=['POST'])
+@api.route('/tank-deposits', methods=['POST'])
 @require_auth
 def create_tank_deposit():
     """Create new tank deposit - MATCHES EXPENSES PATTERN"""
@@ -1606,7 +1609,7 @@ def create_tank_deposit():
         print(f"ERROR creating tank deposit: {e}")
         return jsonify({'error': 'Failed to create tank deposit'}), 500
 
-@app.route('/tank-deposits/<deposit_id>', methods=['PUT'])
+@api.route('/tank-deposits/<deposit_id>', methods=['PUT'])
 @require_auth
 def update_tank_deposit(deposit_id):
     data = request.get_json()
@@ -1665,7 +1668,7 @@ def update_tank_deposit(deposit_id):
         print(f"ERROR updating tank deposit: {e}")
         return jsonify({'error': 'Failed to update tank deposit'}), 500
 
-@app.route('/tank-deposits/<deposit_id>', methods=['DELETE'])
+@api.route('/tank-deposits/<deposit_id>', methods=['DELETE'])
 @require_auth
 def delete_tank_deposit(deposit_id):
     try:
@@ -1688,7 +1691,7 @@ def delete_tank_deposit(deposit_id):
         return jsonify({'error': 'Failed to delete tank deposit'}), 500
 
 # File upload route for tank deposit photos
-@app.route('/tank-deposits/upload-photo', methods=['POST'])
+@api.route('/tank-deposits/upload-photo', methods=['POST'])
 @require_auth
 def upload_tank_deposit_photo():
     """Upload photo for tank deposit - SECURE FILE HANDLING"""
@@ -1734,7 +1737,7 @@ def upload_tank_deposit_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 # ===== PURCHASE ORDERS MODULE (MATCHES ACTUAL TABLE SCHEMA) =====
 
-@app.route('/purchase-orders', methods=['GET'])
+@api.route('/purchase-orders', methods=['GET'])
 @require_auth  
 def get_purchase_orders():
     """Get all purchase orders for current user - MATCHES UPDATED NEON DATABASE SCHEMA"""
@@ -1816,7 +1819,7 @@ def get_purchase_orders():
         print(f"ERROR getting purchase orders: {e}")
         return jsonify({'error': 'Failed to get purchase orders'}), 500
 
-@app.route('/purchase-orders', methods=['POST'])
+@api.route('/purchase-orders', methods=['POST'])
 @require_auth
 def create_purchase_order():
     """Create new purchase order - MATCHES UPDATED NEON DATABASE SCHEMA"""
@@ -1892,7 +1895,7 @@ def create_purchase_order():
         print(f"ERROR creating purchase order: {e}")
         return jsonify({'error': 'Failed to create purchase order'}), 500
 
-@app.route('/purchase-orders/<path:po_id>', methods=['PUT'])
+@api.route('/purchase-orders/<path:po_id>', methods=['PUT'])
 @require_auth
 def update_purchase_order(po_id):
     """Update purchase order - MATCHES ACTUAL NEON DATABASE SCHEMA"""
@@ -1981,7 +1984,7 @@ def update_purchase_order(po_id):
         print(f"ERROR updating purchase order: {e}")
         return jsonify({'error': 'Failed to update purchase order'}), 500
 
-@app.route('/purchase-orders/<path:po_id>', methods=['DELETE'])
+@api.route('/purchase-orders/<path:po_id>', methods=['DELETE'])
 @require_auth
 def delete_purchase_order(po_id):
     """Delete purchase order - MATCHES ACTUAL TABLE SCHEMA"""
@@ -2018,7 +2021,7 @@ def delete_purchase_order(po_id):
         return jsonify({'error': 'Failed to delete purchase order'}), 500
 
 # File upload route for purchase order photos (MATCHES OTHER MODULES PATTERN)
-@app.route('/purchase-orders/upload-photo', methods=['POST'])
+@api.route('/purchase-orders/upload-photo', methods=['POST'])
 @require_auth
 def upload_purchase_order_photo():
     try:
@@ -2062,7 +2065,7 @@ def upload_purchase_order_photo():
         return jsonify({'error': 'Failed to upload photo'}), 500
 
 # Vancouver permit search routes (RESTORED AND FIXED)
-@app.route('/vancouver/permits/filters', methods=['GET'])
+@api.route('/vancouver/permits/filters', methods=['GET'])
 @require_auth
 def get_vancouver_filters():
     """Get available filter options for Vancouver permits"""
@@ -2102,7 +2105,7 @@ def get_vancouver_filters():
         print(f"Error getting Vancouver filters: {e}")
         return jsonify({'error': 'Failed to get filters'}), 500
 
-@app.route('/vancouver/permits/search', methods=['GET'])
+@api.route('/vancouver/permits/search', methods=['GET'])
 @require_auth
 def search_vancouver_permits():
     """Search Vancouver permits with real data from Vancouver Open Data API"""
@@ -2252,7 +2255,7 @@ def search_vancouver_permits():
 
 # ===== INVOICES ROUTES =====
 
-@app.route('/invoices', methods=['GET'])
+@api.route('/invoices', methods=['GET'])
 @require_auth
 def get_invoices():
     try:
@@ -2353,7 +2356,7 @@ def get_invoices():
         print(f"ERROR: Failed to get invoices: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/invoices', methods=['POST'])
+@api.route('/invoices', methods=['POST'])
 @require_auth
 def create_invoice():
     try:
@@ -2420,7 +2423,7 @@ def create_invoice():
         print(f"ERROR: Failed to create invoice: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/invoices/<invoice_id>', methods=['PUT'])
+@api.route('/invoices/<invoice_id>', methods=['PUT'])
 @require_auth
 def update_invoice(invoice_id):
     try:
@@ -2488,7 +2491,7 @@ def update_invoice(invoice_id):
         print(f"ERROR: Failed to update invoice: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/invoices/<invoice_id>', methods=['DELETE'])
+@api.route('/invoices/<invoice_id>', methods=['DELETE'])
 @require_auth
 def delete_invoice(invoice_id):
     try:
@@ -2517,7 +2520,7 @@ def delete_invoice(invoice_id):
         print(f"ERROR: Failed to delete invoice: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/invoices/<invoice_id>/pdf', methods=['GET'])
+@api.route('/invoices/<invoice_id>/pdf', methods=['GET'])
 @require_auth
 def generate_invoice_pdf(invoice_id):
     try:
@@ -2531,7 +2534,7 @@ def generate_invoice_pdf(invoice_id):
 
 # ===== COMPANY PROFILE ROUTES =====
 
-@app.route('/company-profile', methods=['GET'])
+@api.route('/company-profile', methods=['GET'])
 @require_auth
 def get_company_profile():
     try:
@@ -2559,7 +2562,7 @@ def get_company_profile():
         print(f"ERROR: Failed to get company profile: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/company-profile', methods=['PUT'])
+@api.route('/company-profile', methods=['PUT'])
 @require_auth
 def update_company_profile():
     try:
@@ -2579,7 +2582,7 @@ def update_company_profile():
 
 # ===== GENERIC FILE UPLOAD ROUTE =====
 
-@app.route('/upload', methods=['POST'])
+@api.route('/upload', methods=['POST'])
 @require_auth
 def upload_file():
     """Generic file upload endpoint - SECURE FILE HANDLING"""
@@ -2625,7 +2628,7 @@ def upload_file():
         return jsonify({'error': 'Failed to upload file'}), 500
 
 # Serve uploaded files (FIXED - handles nested directories properly)
-@app.route('/uploads/<path:filename>')
+@api.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     print(f"DEBUG: File serving request for: {filename}")
     print(f"DEBUG: Upload folder: {app.config['UPLOAD_FOLDER']}")
@@ -2662,6 +2665,9 @@ def uploaded_file(filename):
     except Exception as e:
         print(f"DEBUG: Unexpected error serving file: {e}")
         return "Error serving file", 500
+
+# Register the blueprint with /api prefix
+app.register_blueprint(api, url_prefix='/api')
 
 if __name__ == '__main__':
     print("Starting JobTract backend server...")
