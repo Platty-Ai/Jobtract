@@ -23,11 +23,14 @@ CORS(app)
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 # Configure upload folder in backend directory
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Use /tmp for Vercel serverless
+# Ensure upload directory exists (will be temporary on Vercel)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+except Exception as e:
+    print(f"Warning: Could not create upload folder: {e}")
 
-# Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Database connection
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -1673,6 +1676,48 @@ def delete_tank_deposit(deposit_id):
         print(f"ERROR deleting tank deposit: {e}")
         return jsonify({'error': 'Failed to delete tank deposit'}), 500
 
+# File upload route for tank deposit photos
+@app.route('/tank-deposits/upload-photo', methods=['POST'])
+@require_auth
+def upload_tank_deposit_photo():
+    """Upload photo for tank deposit - SECURE FILE HANDLING"""
+    try:
+        if 'photo' not in request.files:
+            return jsonify({'error': 'No photo file provided'}), 400
+        
+        file = request.files['photo']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Validate file type
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        if not ('.' in file.filename and 
+                file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+            return jsonify({'error': 'Invalid file type. Only images allowed.'}), 400
+        
+        if file:
+            # Secure the filename
+            filename = secure_filename(file.filename)
+            timestamp = datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            user_prefix = request.current_user.replace('@', '_').replace('.', '_')
+            filename = f"tank_deposit_{user_prefix}_{timestamp}_{filename}"
+            
+            # Ensure upload directory exists
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            
+            # Save the file
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            
+            return jsonify({
+                'filename': filename,
+                'path': file_path,
+                'url': f'/uploads/{filename}'
+            })
+        
+    except Exception as e:
+        print(f"ERROR uploading tank deposit photo: {e}")
+        return jsonify({'error': 'Failed to upload photo'}), 500
 # ===== PURCHASE ORDERS MODULE (MATCHES ACTUAL TABLE SCHEMA) =====
 
 @app.route('/purchase-orders', methods=['GET'])
