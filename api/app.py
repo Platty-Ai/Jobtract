@@ -22,15 +22,14 @@ CORS(app)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
-# Configure upload folder in backend directory
-app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Use /tmp for Vercel serverless
-# Ensure upload directory exists (will be temporary on Vercel)
+app.config['UPLOAD_FOLDER'] = '/tmp/uploads'  # Writable on Vercel
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Ensure upload directory exists (wrap in try for Vercel)
 try:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 except Exception as e:
     print(f"Warning: Could not create upload folder: {e}")
-
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Database connection
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -517,7 +516,10 @@ def upload_project_photo():
             filename = f"project_{user_prefix}_{timestamp}_{filename}"
             
             # Ensure upload directory exists
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            try:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create upload folder: {e}")
             
             # Save the file
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -777,7 +779,10 @@ def upload_quote_photo():
             # Create URL-safe user directory name
             safe_user = request.current_user.replace('@', '_at_').replace('.', '_')
             user_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"user_{safe_user}")
-            os.makedirs(user_dir, exist_ok=True)
+            try:
+                os.makedirs(user_dir, exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create user upload folder: {e}")
             
             # Generate unique filename
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -1184,7 +1189,10 @@ def upload_equipment_photo():
             filename = f"{user_prefix}_{timestamp}_{filename}"
             
             # Ensure upload directory exists
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            try:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create upload folder: {e}")
             
             # Save the file
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -1485,7 +1493,10 @@ def upload_expense_photo():
             filename = f"{user_prefix}_{timestamp}_{filename}"
             
             # Ensure upload directory exists
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            try:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create upload folder: {e}")
             
             # Save the file
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -1703,7 +1714,10 @@ def upload_tank_deposit_photo():
             filename = f"tank_deposit_{user_prefix}_{timestamp}_{filename}"
             
             # Ensure upload directory exists
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            try:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create upload folder: {e}")
             
             # Save the file
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -2019,7 +2033,10 @@ def upload_purchase_order_photo():
             # Create URL-safe user directory name
             safe_user = request.current_user.replace('@', '_at_').replace('.', '_')
             user_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"user_{safe_user}")
-            os.makedirs(user_dir, exist_ok=True)
+            try:
+                os.makedirs(user_dir, exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create user upload folder: {e}")
             
             # Generate unique filename
             timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -2588,7 +2605,10 @@ def upload_file():
             filename = f"file_{timestamp}.{original_extension}"
             
             # Ensure upload directory exists
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            try:
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            except Exception as e:
+                print(f"Warning: Could not create upload folder: {e}")
             
             # Save file
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
